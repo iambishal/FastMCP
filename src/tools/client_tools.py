@@ -2,7 +2,7 @@
 
 import requests
 from pydantic import BaseModel, Field
-from src.utility.logging import setup_logging
+from utility.logging import setup_logging
 
 logger = setup_logging(__name__)
 
