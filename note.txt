@@ -1,0 +1,71 @@
+# ===================================
+# APPLICATION CONFIGURATION
+# ===================================
+APP_NAME=Indy-mcp-server
+APP_VERSION=2.0.0
+ENVIRONMENT=local  # local, development, staging, production
+DEBUG=false
+
+# ===================================
+# SERVER CONFIGURATION
+# ===================================
+HOST=127.0.0.1
+PORT=8000
+WORKERS=4
+
+# ===================================
+# LOGGING CONFIGURATION
+# ===================================
+LOG_LEVEL=INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_FILE=logs/app.log
+LOG_MAX_BYTES=10485760  # 10MB
+LOG_BACKUP_COUNT=5
+
+# ===================================
+# AZURE APPLICATION INSIGHTS
+# (Required for production environment)
+# ===================================
+APPLICATIONINSIGHTS_CONNECTION_STRING=
+ENABLE_TELEMETRY=false
+
+# ===================================
+# PERFORMANCE & SCALING
+# ===================================
+REQUEST_TIMEOUT=30
+MAX_CONNECTIONS=1000
+RATE_LIMIT_REQUESTS=100  # requests per minute per IP
+
+# ===================================
+# EXTERNAL API CONFIGURATION
+# ===================================
+# Global timeout for all external APIs (in seconds)
+API_TIMEOUT=10
+
+# Global max retries for all external APIs
+API_MAX_RETRIES=3
+
+# Petstore API base URL
+PETSTORE_BASE_URL=https://petstore.swagger.io/v2
+
+# JSON Placeholder API base URL
+JSONPLACEHOLDER_BASE_URL=https://jsonplaceholder.typicode.com
+
+
+# ===================================
+# SECURITY (JWT Authentication)
+# ===================================
+ENABLE_AUTH=false
+JWT_JWKS_URI=
+JWT_ISSUER=
+JWT_AUDIENCE=
+
+# ===================================
+# CORS CONFIGURATION
+# ===================================
+CORS_ORIGINS=["*"]  # JSON array of allowed origins
+CORS_ALLOW_CREDENTIALS=true
+
+# ===================================
+# HEALTH CHECK CONFIGURATION
+# ===================================
+HEALTH_CHECK_INTERVAL=30
