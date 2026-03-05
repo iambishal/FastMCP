@@ -1,5 +1,47 @@
-fastmcp
-uvicorn
-requests
-pydantic
-python-dotenv
+# Core Framework
+fastmcp>=3.0.0
+uvicorn[standard]>=0.27.0
+starlette>=0.35.0
+
+# HTTP Client with HTTP/2 support
+httpx>=0.26.0
+
+# Data Validation
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+email-validator>=2.1.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# Dependency Injection
+dependency-injector>=4.40.0,<5.0.0
+
+# Resilience & Reliability
+tenacity>=8.2.3
+
+# Azure Monitoring (Optional - for production)
+opencensus-ext-azure>=1.1.13
+azure-monitor-opentelemetry>=1.2.0
+azure-core>=1.29.0
+
+# Logging Enhancement
+python-json-logger>=2.0.7
+
+# Performance Monitoring
+prometheus-client>=0.19.0
+
+# Security
+cryptography>=41.0.7
+PyJWT>=2.8.0
+
+# Development & Testing (optional)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+# httpx-mock>=0.13.0  # Not available in current PyPI
+
+# Code Quality (optional)
+black>=23.12.0
+ruff>=0.1.9
+mypy>=1.7.0

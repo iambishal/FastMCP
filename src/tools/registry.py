@@ -1,89 +1,71 @@
-"""Tool registry module for registering MCP tools."""
+"""Tool registry with Petstore API support using dependency injection."""
 
 from fastmcp import FastMCP
-from tools.client_tools import (
-    addClient,
-    addClientAddress,
-    addClientSuitability,
+from tools.example_tools import (
     findPetsByStatus,
-    ClientBasicInformation,
-    ClientAddress,
-    ClientSuitability,
-    PetStatusInput
+    PetStatusInput,
 )
-from utility.logging import setup_logging
+from container import Container
 
-logger = setup_logging(__name__)
 
-# Tool Constants
-TOOL_NAMES = {
-    "add_client": "add_client",
-    "add_client_address": "add_client_address",
-    "add_client_suitability": "add_client_suitability",
-    "find_pets_by_status": "find_pets_by_status",
-}
-
-TOOL_DESCRIPTIONS = {
-    "add_client": "Add a new client to the system",
-    "add_client_address": "Add a new client address to the system",
-    "add_client_suitability": "Add a new client suitability to the system",
-    "find_pets_by_status": "Find pets from the Petstore API by status (available, pending, sold)",
+# Tool metadata
+TOOL_METADATA = {
+    "find_pets_by_status": {
+        "name": "find_pets_by_status",
+        "description": "Find pets from Petstore API filtered by status (available, pending, or sold)",
+        "tags": ["External API", "Pets"],
+        "timeout": 30,
+    },
 }
 
 
-def register_tools(mcp: FastMCP) -> None:
+def register_tools(
+    mcp: FastMCP,
+    container: Container
+) -> None:
     """
-    Register all available tools with the FastMCP instance.
+    Register all MCP tools with proper error handling and logging.
+    
+    Uses dependency injection to obtain required dependencies from the container.
     
     Args:
         mcp: FastMCP instance to register tools with
+        container: Dependency injection container
         
     Raises:
         Exception: If tool registration fails
     """
+    # Get dependencies from container (call providers)
+    api_manager = container.api_manager()
+    logger = container.logger()
+    
     try:
         @mcp.tool(
-            name=TOOL_NAMES["add_client"],
-            description=TOOL_DESCRIPTIONS["add_client"],
-            tags=["Client Management"],
-            timeout=30 #30 Seconds 
+            name=TOOL_METADATA["find_pets_by_status"]["name"],
+            description=TOOL_METADATA["find_pets_by_status"]["description"],
+            tags=TOOL_METADATA["find_pets_by_status"]["tags"],
+            timeout=TOOL_METADATA["find_pets_by_status"]["timeout"]
         )
-        def add_client(client_info: ClientBasicInformation) -> dict:
-            """Add a new client to the system."""
-            return addClient(client_info)
-
-        @mcp.tool(
-            name=TOOL_NAMES["add_client_address"],
-            description=TOOL_DESCRIPTIONS["add_client_address"],
-            tags=["Client Management"],
-            timeout=30
-        )
-        def add_client_address(client_address: ClientAddress) -> dict:
-            """Add a new client address to the system."""
-            return addClientAddress(client_address)
-
-        @mcp.tool(
-            name=TOOL_NAMES["add_client_suitability"],
-            description=TOOL_DESCRIPTIONS["add_client_suitability"],
-            tags=["Client Management","deprecated"],
-            timeout=30
-        )
-        def add_client_suitability(client_suitability: ClientSuitability) -> dict:
-            """Add a new client suitability to the system."""
-            return addClientSuitability(client_suitability)
-
-        @mcp.tool(
-            name=TOOL_NAMES["find_pets_by_status"],
-            description=TOOL_DESCRIPTIONS["find_pets_by_status"],
-            tags=["Client Management"],
-            timeout=30
-        )
-        def find_pets_by_status(pet_status: PetStatusInput) -> dict:
-            """Find pets from the Petstore API by status."""
-            return findPetsByStatus(pet_status.status)
+        async def find_pets_by_status_tool(pet_status: PetStatusInput) -> dict:
+            """
+            Find pets by status from the Petstore API.
+            
+            Args:
+                pet_status: Pet status filter (available, pending, sold)
+                
+            Returns:
+                dict: Response with pets list or error
+            """
+            try:
+                # Get the Petstore API client from the API manager
+                petstore_client = api_manager.get("petstore")
+                return await findPetsByStatus(pet_status.status, petstore_client, logger)
+            except Exception as e:
+                logger.error(f"Error in find_pets_by_status: {e}", exc_info=True)
+                return {"error": "Failed to fetch pets", "details": str(e)}
         
-        logger.info("Successfully registered all tools")
+        logger.info(f"Successfully registered {len(TOOL_METADATA)} tools")
     
     except Exception as e:
-        logger.error(f"Error registering tools: {e}", exc_info=True)
+        logger.error(f"Critical error during tool registration: {e}", exc_info=True)
         raise

@@ -1,24 +1,134 @@
 version: '3.8'
 
 services:
+  # ===================================
+  # MCP Server Service
+  # ===================================
   mcp-server:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.enhanced
     container_name: fastmcp-server
+    restart: unless-stopped
+    
+    # Environment-specific configuration
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-local}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FILE=/app/logs/app.log
+      - LOG_MAX_BYTES=${LOG_MAX_BYTES:-10485760}
+      - LOG_BACKUP_COUNT=${LOG_BACKUP_COUNT:-5}
+      - APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING:-}
+      - ENABLE_TELEMETRY=${ENABLE_TELEMETRY:-false}
+      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-30}
+      - MAX_CONNECTIONS=${MAX_CONNECTIONS:-1000}
+      - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-100}
+      - ENABLE_AUTH=${ENABLE_AUTH:-false}
+    
+    # Port mapping
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
+    
+    # Volume mounts
     volumes:
       - ./logs:/app/logs
-    environment:
-      - LOG_LEVEL=INFO
-      - LOG_FILE=/app/logs/app.log
-      - LOG_MAX_BYTES=10485760
-      - LOG_BACKUP_COUNT=5
-    restart: unless-stopped
+      - ./data:/app/data
+    
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
     networks:
       - mcp-network
 
+  # ===================================
+  # Optional: Redis for caching/session management
+  # ===================================
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: mcp-redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   networks:
+  #     - mcp-network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 3
+
+  # ===================================
+  # Optional: Prometheus for metrics
+  # ===================================
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: mcp-prometheus
+  #   restart: unless-stopped
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus-data:/prometheus
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #     - '--storage.tsdb.path=/prometheus'
+  #   networks:
+  #     - mcp-network
+
+  # ===================================
+  # Optional: Grafana for visualization
+  # ===================================
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: mcp-grafana
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #   networks:
+  #     - mcp-network
+
+# ===================================
+# Networks
+# ===================================
 networks:
   mcp-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ===================================
+# Volumes
+# ===================================
+volumes:
+  redis-data:
+  prometheus-data:
+  grafana-data:
