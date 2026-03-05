@@ -1,5 +1,4 @@
 import sys
-from contextlib import asynccontextmanager
 
 from fastmcp import FastMCP
 from starlette.requests import Request
@@ -7,7 +6,7 @@ from starlette.responses import JSONResponse
 
 # Import configuration and utilities
 from config import settings
-from container import get_container, init_container_dependencies, shutdown_container_dependencies
+from container import get_container
 
 from middleware import configure_middleware
 from tools.registry import register_tools
@@ -16,28 +15,6 @@ from utility.exception_handlers import register_exception_handlers
 # Initialize dependency container
 container = get_container()
 logger = container.logger()
-
-# Define lifespan context manager for async startup/shutdown
-@asynccontextmanager
-async def lifespan(app):
-    """Manage application lifecycle with proper dependency initialization."""
-    # Startup
-    try:
-        await init_container_dependencies(container)
-        logger.info("Container dependencies initialized during startup")
-    except Exception as e:
-        logger.error(f"Failed to initialize container dependencies: {e}", exc_info=True)
-        raise
-    
-    yield
-    
-    # Shutdown
-    try:
-        await shutdown_container_dependencies(container)
-        logger.info("Container dependencies shutdown complete")
-    except Exception as e:
-        logger.error(f"Failed to shutdown container dependencies: {e}", exc_info=True)
-
 
 # Create FastMCP instance with enhanced configuration
 mcp = FastMCP(
@@ -51,9 +28,14 @@ mcp = FastMCP(
     # ) if settings.enable_auth else None,
 )
 
-# Register lifespan handler with the Starlette app
-app = mcp.http_app()
-app.router.lifespan_context = lifespan
+# Initialize API Manager synchronously
+try:
+    api_manager = container.api_manager()
+    api_manager.initialize_sync()
+    logger.info("API Manager initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize API Manager: {e}", exc_info=True)
+    sys.exit(1)
 
 # Register tools
 try:

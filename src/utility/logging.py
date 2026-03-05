@@ -178,11 +178,19 @@ def setup_logging(
         connection_string = None
     else:
         log_level = config.log_level
-        log_file = config.log_file if not config.is_production else None
         log_max_bytes = config.log_max_bytes
         log_backup_count = config.log_backup_count
-        enable_azure = config.enable_telemetry and config.is_production
         connection_string = config.applicationinsights_connection_string
+        enable_azure = config.enable_telemetry
+        
+        # Use Azure logging if configured, otherwise use file logging
+        if enable_azure and connection_string:
+            # Azure is configured - no file logging
+            log_file = None
+        else:
+            # Local development - use file logging
+            log_file = config.log_file
+            enable_azure = False
     
     # Set up Azure logging if enabled
     if enable_azure and connection_string:
